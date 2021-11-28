@@ -17,6 +17,10 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
     mapping(bytes32 => uint) internal requestIdToTokenId;
     mapping(uint => uint) internal tokenIdToRandomNumber;
 
+    event requestedRandomSVG(bytes32 indexed requestId, uint indexed tokenId);
+    event CreatedRSVGNFT(uint indexed tokenID, string tokenURI);
+    event CreatedUnfinishedRandomSVG(uint indexed, uint randomness);
+
 
     bytes32 internal keyHash;
     uint256 internal fee;
@@ -24,8 +28,12 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
     address public vrfCoordinator;
     address public linkToken;
 
-    string baseSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: darkcyan; font-family: serif; font-size: 39px; }</style><rect width='100%' height='100%' fill='aquamarine' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
-
+    // SVG parameters
+    uint256 public maxNumberOfCircles;
+    uint public size;
+    string public svgPartOne;
+    string public svgPartTwo;
+    
     string[] weather = [
         "Rain", 
         "Snow", 
@@ -51,6 +59,7 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
         "Cold Wind",
         "Fog and Rain"
     ];
+    
 
 
       /**
@@ -78,6 +87,12 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
         linkToken = 0x01BE23585060835E02B77ef475b0Cc51aA1e0709;
         keyHash = 0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311;
         fee = 0.1 * 10 ** 18;
+
+        // initialize range of SVG Parameters to be chosen from
+        
+        svgPartOne = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: darkcyan; font-family: serif; font-size: 39px; }</style><rect width='100%' height='100%' fill='aquamarine' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
+        svgPartTwo = "</text></svg>";
+
     }
 
     function predictWeather() public returns (bytes32 requestId){
@@ -85,48 +100,68 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
     requestIdToSender[requestId] = msg.sender;
     uint tokenId = _tokenIds.current();
     requestIdToTokenId[requestId] = tokenId;
+    emit requestedRandomSVG(requestId, tokenId);
     _tokenIds.increment();
+  }
+
+  // sends request for random number to Chainlink VRF node along with fee
+  function getRandomNumber() internal returns (bytes32 requestId) {
+    require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
+    return requestRandomness(keyHash, fee);
+  }
+
+  // callback function called with the returning random value
+  function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
+    address nftOwner = requestIdToSender[requestId];
+    uint tokenId = requestIdToTokenId[requestId];
+    _safeMint(nftOwner, tokenId);
+    tokenIdToRandomNumber[tokenId] = randomness;
+    emit CreatedUnfinishedRandomSVG(tokenId, randomness);
+  }
+
+  function tokenURI(uint tokenId) public view override returns(string memory){
+    string memory _tokenURI = "Token with that ID does not exist.";
+    if (_exists(tokenId)){
+      require(tokenIdToRandomNumber[tokenId] > 0, "Need to wait for Chainlink VRF");
+      string memory svg = generateSVG(tokenIdToRandomNumber[tokenId]);
+      string memory imageURI = svgToImageURI(svg);
+      _tokenURI = formatTokenURI(imageURI);
     }
+    return _tokenURI;
+  }
 
+  function generateSVG(uint _randomNumber) internal view returns(string memory finalSvg){
 
-    function getRandomNumber() internal returns (bytes32 requestId) {
-        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - visit the faucet to fill the contract.");
-        return requestRandomness(keyHash, fee);
-    }
+    uint grabIt = (_randomNumber % 23) + 1;
+    string memory prediction = weather[grabIt];
+    finalSvg = string(abi.encodePacked(svgPartOne, prediction, svgPartTwo));
+  }
 
-
-    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
-        address nftOwner = requestIdToSender[requestId];
-        uint tokenId = requestIdToTokenId[requestId];
-        _safeMint(nftOwner, tokenId);
-        tokenIdToRandomNumber[tokenId] = randomness;
-        string memory prediction = weather[(randomness % weather.length) +1];   //length = 23
-        string memory finalSvg = string(abi.encodePacked(baseSvg, prediction, "</text></svg>"));
-    
-
-        string memory json = Base64.encode(
-                bytes(
-                    string(
-                        abi.encodePacked(
-                    '{"name": "The Weather Today", ', 
-                    '"description": "A truly random weather prediction!", "image": "data:image/svg+xml;base64,', 
-                    Base64.encode(bytes(finalSvg)),
-                            '"}'
-
-                        )
-                    ) 
-                ) 
-            );
-        
-        string memory finalTokenUri = string(
-            abi.encodePacked("data:application/json;base64,", json)
-        );
-
-        _safeMint(msg.sender, tokenId);
-    
-        _setTokenURI(tokenId, finalTokenUri);
   
-        _tokenIds.increment();
-    }
-  
+  function svgToImageURI(string memory svg) public pure returns(string memory){
+    string memory baseURL = "data:image/svg+xml;base64,";
+    string memory svgBase64Encoded = Base64.encode(bytes(string(abi.encodePacked(svg))));
+    return string(abi.encodePacked(baseURL, svgBase64Encoded));
+  }
+
+  function formatTokenURI(string memory imageURI) public pure returns(string memory){
+    string memory baseURL = "data:application/json;base64,";
+    return string(
+      abi.encodePacked(
+        baseURL,
+        Base64.encode(
+          bytes(
+            abi.encodePacked(
+              '{"name": "SVG NFT", ', 
+              '"description": "An NFT with SVG on chain!", ',
+              '"attributes":"", ',
+              '"image": "',
+              imageURI,
+              '"}'
+            )
+          )
+        )
+      )
+    );
+  }
 }
