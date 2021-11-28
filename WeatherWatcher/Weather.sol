@@ -152,8 +152,8 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
         Base64.encode(
           bytes(
             abi.encodePacked(
-              '{"name": "SVG NFT", ', 
-              '"description": "An NFT with SVG on chain!", ',
+              '{"name": "The Weather Today", ', 
+              '"description": "A truly random weather prediction!", ',
               '"attributes":"", ',
               '"image": "',
               imageURI,
