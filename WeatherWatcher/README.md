@@ -8,6 +8,6 @@ While it's not the project we set out to create for the Hackathon, we're very ex
 
 Looking ahead, creating a working random SVG project project opens many doors for us.  Once we get the image part sorted out, we'll be able to randomly generate buckets to use for RainCatcher.
 
-HUGE thank you to https://github.com/SimRunBot for elegant and adaptable code, to Buildspace for giving us the tools we needed to tinker and experiment, and to Replit for the wonderfully user-friendly frontend development environment. 💻 ✨
+HUGE thank you to https://github.com/SimRunBot for elegant and adaptable code, to Buildspace for giving us the tools we needed to tinker and experiment, to Replit for the wonderfully user-friendly frontend development environment, and to Chainlink for the opportunity and all of the amazing workshops. 💻 ✨
 
 
