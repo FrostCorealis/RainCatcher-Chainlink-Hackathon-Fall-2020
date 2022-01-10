@@ -29,8 +29,6 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
     address public linkToken;
 
     // SVG parameters
-    uint256 public maxNumberOfCircles;
-    uint public size;
     string public svgPartOne;
     string public svgPartTwo;
     
@@ -132,7 +130,7 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
 
   function generateSVG(uint _randomNumber) internal view returns(string memory finalSvg){
 
-    uint grabIt = (_randomNumber % 23) + 1;
+    uint grabIt = (_randomNumber % 23);
     string memory prediction = weather[grabIt];
     finalSvg = string(abi.encodePacked(svgPartOne, prediction, svgPartTwo));
   }
