@@ -28,7 +28,6 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
     address public vrfCoordinator;
     address public linkToken;
 
-    // SVG parameters
     string public svgPartOne;
     string public svgPartTwo;
     
@@ -57,8 +56,6 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
         "Cold Wind",
         "Fog and Rain"
     ];
-    
-
 
       /**
       network: rinkeby
@@ -86,7 +83,6 @@ contract Weather is ERC721URIStorage, VRFConsumerBase {
         keyHash = 0x2ed0feb3e7fd2022120aa84fab1945545a9f2ffc9076fd6156fa96eaff4c1311;
         fee = 0.1 * 10 ** 18;
 
-        // initialize range of SVG Parameters to be chosen from
         
         svgPartOne = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: darkcyan; font-family: serif; font-size: 39px; }</style><rect width='100%' height='100%' fill='aquamarine' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
         svgPartTwo = "</text></svg>";
